@@ -37,7 +37,13 @@ fn main() {
     }
     #[cfg(feature = "openblas")]
     {
-        println!("cargo:rustc-link-lib=openblas");
+        println!("cargo:rustc-link-lib=libopenblas");
+        cfg_if::cfg_if! {
+            if #[cfg(target_os = "windows")] {
+                let openblas_path = PathBuf::from(env::var("OPENBLAS_PATH").unwrap()).join("lib");
+                println!("cargo:rustc-link-search={}", openblas_path.display());
+            }
+        }
     }
     #[cfg(feature = "cuda")]
     {
@@ -125,6 +131,10 @@ fn main() {
 
     if cfg!(feature = "openblas") {
         config.define("WHISPER_OPENBLAS", "ON");
+
+        if let Ok(openblas_path) = env::var("OPENBLAS_PATH") {
+            config.env("OPENBLAS_PATH", &openblas_path);
+        }
     }
 
     if cfg!(feature = "opencl") {
